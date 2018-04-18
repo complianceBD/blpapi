@@ -39,13 +39,22 @@ class BLPTEST():
         self.refExrSvc = self.session.getService('//BLP/exrsvc')
 
     def bdp(self, strSecurity='US900123AL40 Govt', strData='PX_LAST',
-            strOverrideField={}, strOverrideValue=['']):
+            strOverrideField={}):
+            """"
+            CHANGE OVERRIDE VALUE TO DICTIONARY SO MORE THAN ONE OVERRIDE CAN BE SET. 
+            IF YOU WANT TO REFERENCE A SPECIFIC PRICING SOURCE SUCH AS TRAC, MSRB, BVAL, 
+            USE @PRICING SOURCE IN THE strSecurty Field. 
+            Ex1 (defautl bloomberg price source): bdp('037833AJ9@TRAC Corp', 'INTERVAL_AVG',
+                                                  strOverrideField={'MARKET_DATA_OVERRIDE': 'PX_HIGH', 'CALC_INTERVAL':'522D'})
+            ex1 (use specific pcs value):bdp('037833AJ9@TRAC@TRAC Corp', 'INTERVAL_AVG',
+                                                  strOverrideField={'MARKET_DATA_OVERRIDE': 'PX_HIGH', 'CALC_INTERVAL':'522D'}) 
+            """"
 
         request = self.refDataSvc.createRequest('ReferenceDataRequest')
         request.append('securities', strSecurity)
         request.append('fields', strData)
 
-        if strOverrideField !={''}:
+        if strOverrideField !={}:
             for oField, oValue in strOverrideField.items():
                 o = request.getElement('overrides').appendElement()
                 o.setElement('fieldId', oField)
@@ -68,8 +77,13 @@ class BLPTEST():
         return output
 
     def bdh(self, strSecurity='SPX Index', strData='PX_LAST', startdate=datetime.date(2014, 1, 1), enddate=datetime.date(2014, 1, 9), adjustmentSplit=False, periodicity='DAILY', singleFrame=False, outputType='df'):
+        """Data history request, added optionality to return the information as a list or data frame
+        To return a list set outputType to any string other than df, such as 'list', code defaults to dataframe
+        """
+        blpFieldRef=strData
         request = self.refDataSvc.createRequest('HistoricalDataRequest')
         request.append('securities', strSecurity)
+        blpFieldsRef = strData
         if type(strData) == str:
             strData = [strData]
 
@@ -93,7 +107,7 @@ class BLPTEST():
         if outputType != 'df':
             outDates = [x.getElementAsDatetime(DATE) for x in fieldDataList]
             outDates = [i for i in outDates]
-            fieldData = [x.getElementAsFloat('PX_MID') for x in fieldDataList]
+            fieldData = [x.getElementAsFloat(blpFieldRef) for x in fieldDataList]
             fieldData = [i for i in fieldData]
             return fieldData
         else:
